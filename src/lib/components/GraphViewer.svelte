@@ -382,14 +382,14 @@
 </script>
 
 <div class="graph-wrap" class:fullscreen bind:this={wrapperEl}>
+	{#if fullscreen}
+		<a href="/" class="graph-back" title="Back to home">
+			<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+		</a>
+	{/if}
+
 	{#if !loading && !errorMsg}
 		<div class="graph-toolbar">
-			{#if fullscreen}
-				<a href="/" class="toolbar-back">
-					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-				</a>
-				<span class="toolbar-divider"></span>
-			{/if}
 			{#each (['user', 'note', 'tag', 'external'] as NodeType[]) as type}
 				<button
 					class="filter-btn"
@@ -469,27 +469,29 @@
 		cursor: grab;
 	}
 
-	/* ── Toolbar back button ── */
-	.toolbar-back {
+	/* ── Back button (fullscreen) ── */
+	.graph-back {
+		position: absolute;
+		top: 0.875rem;
+		left: 0.875rem;
+		z-index: 10;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 24px;
-		height: 24px;
+		width: 40px;
+		height: 40px;
 		border-radius: 50%;
-		color: var(--color-text-tertiary);
-		transition: all 0.15s ease;
+		color: var(--color-text-secondary);
+		background: rgba(9, 9, 11, 0.7);
+		backdrop-filter: blur(8px);
+		border: 1px solid var(--color-border);
+		transition: all 0.2s var(--ease-out);
 	}
 
-	.toolbar-back:hover {
+	.graph-back:hover {
 		color: var(--color-text);
-		background: rgba(255, 255, 255, 0.06);
-	}
-
-	.toolbar-divider {
-		width: 1px;
-		height: 16px;
-		background: var(--color-border);
+		background: rgba(9, 9, 11, 0.85);
+		border-color: var(--color-border-hover);
 	}
 
 	/* ── Toolbar ── */
