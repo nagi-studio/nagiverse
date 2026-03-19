@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NoteFrontmatter",
+  "type": "object",
+  "required": ["id", "title"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]*$",
+      "description": "Unique note identifier"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Note title"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Brief summary"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Topic tags"
+    },
+    "links": {
+      "type": "array",
+      "items": { "type": "string", "format": "uri" },
+      "description": "External URLs"
+    },
+    "related_users": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Related user IDs"
+    },
+    "related_notes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Related note IDs"
+    },
+    "source_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Original source URL"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Creation date (YYYY-MM-DD)"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Last update date (YYYY-MM-DD)"
+    }
+  }
+}

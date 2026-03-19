@@ -1,0 +1,11 @@
+node_modules/
+.svelte-kit/
+build/
+.vercel/
+
+# Generated build artifacts
+static/generated/
+src/lib/generated/*.json
+
+# OS
+.DS_Store
