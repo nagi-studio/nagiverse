@@ -26,7 +26,6 @@
 	let loading = $state(true);
 	let errorMsg = $state('');
 
-	// ── Filter state ──
 	type NodeType = 'user' | 'note' | 'tag' | 'external';
 	let activeFilters: Record<NodeType, boolean> = $state({
 		user: true,
@@ -65,11 +64,8 @@
 		edgeType: string;
 	}
 
-	// Full data (never filtered)
 	let allNodes: VisNode[] = [];
 	let allEdges: VisEdge[] = [];
-
-	// Active (filtered) data fed to simulation
 	let nodes: VisNode[] = [];
 	let edges: VisEdge[] = [];
 	let simulation: ReturnType<typeof forceSimulation<VisNode>> | null = null;
@@ -82,10 +78,14 @@
 	let dragStart = { x: 0, y: 0 };
 	let dragNode: VisNode | null = null;
 	let didDrag = false;
+	let userHasInteracted = false;
+
+	// Touch state
+	let lastTouchDist = 0;
+	let lastTouchCenter = { x: 0, y: 0 };
 
 	function buildGraph(data: GraphData) {
 		const nodeMap = new Map<string, VisNode>();
-
 		allNodes = data.nodes.map((n) => {
 			const connections = data.edges.filter(
 				(e) => e.source === n.id || e.target === n.id
@@ -104,7 +104,6 @@
 			nodeMap.set(n.id, vn);
 			return vn;
 		});
-
 		allEdges = data.edges
 			.map((e) => {
 				const s = nodeMap.get(e.source);
@@ -129,12 +128,12 @@
 
 	function toggleFilter(type: NodeType) {
 		activeFilters[type] = !activeFilters[type];
+		userHasInteracted = false;
 		applyFilters();
 		restartSimulation();
 	}
 
-	let hasAutoFit = false;
-
+	// ── Auto-fit: compute transform to fit all nodes in viewport ──
 	function fitToView() {
 		if (nodes.length === 0) return;
 		const w = containerWidth || 800;
@@ -143,10 +142,11 @@
 		let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 		for (const n of nodes) {
 			const r = n.radius;
-			if ((n.x ?? 0) - r < minX) minX = (n.x ?? 0) - r;
-			if ((n.y ?? 0) - r < minY) minY = (n.y ?? 0) - r;
-			if ((n.x ?? 0) + r > maxX) maxX = (n.x ?? 0) + r;
-			if ((n.y ?? 0) + r > maxY) maxY = (n.y ?? 0) + r;
+			const nx = n.x ?? 0, ny = n.y ?? 0;
+			if (nx - r < minX) minX = nx - r;
+			if (ny - r < minY) minY = ny - r;
+			if (nx + r > maxX) maxX = nx + r;
+			if (ny + r > maxY) maxY = ny + r;
 		}
 
 		const graphW = maxX - minX;
@@ -157,7 +157,7 @@
 		const scale = Math.min(
 			(w - padding * 2) / graphW,
 			(h - padding * 2) / graphH,
-			3 // max zoom
+			3
 		);
 		const cx = (minX + maxX) / 2;
 		const cy = (minY + maxY) / 2;
@@ -170,7 +170,6 @@
 	function startSimulation() {
 		const w = containerWidth || 800;
 		const h = containerHeight || 600;
-		hasAutoFit = false;
 
 		simulation = forceSimulation<VisNode>(nodes)
 			.force(
@@ -183,11 +182,8 @@
 			.force('center', forceCenter(w / 2, h / 2))
 			.force('collide', forceCollide<VisNode>().radius((d) => d.radius + 4))
 			.on('tick', () => {
-				// Auto-fit once the simulation has mostly settled
-				if (!hasAutoFit && simulation && simulation.alpha() < 0.3) {
-					hasAutoFit = true;
-					fitToView();
-				}
+				// Keep auto-fitting until user interacts or simulation cools
+				if (!userHasInteracted) fitToView();
 				render();
 			});
 	}
@@ -202,7 +198,7 @@
 		const ctx = canvasEl.getContext('2d');
 		if (!ctx) return;
 		const w = containerWidth || 800;
-		const h = containerHeight;
+		const h = containerHeight || 600;
 
 		const dpr = window.devicePixelRatio || 1;
 		canvasEl.width = w * dpr;
@@ -214,17 +210,13 @@
 		ctx.translate(transform.x, transform.y);
 		ctx.scale(transform.k, transform.k);
 
-		// ── Edges ──
 		for (const edge of edges) {
 			const sx = edge.source.x ?? 0;
 			const sy = edge.source.y ?? 0;
 			const tx = edge.target.x ?? 0;
 			const ty = edge.target.y ?? 0;
-
 			const isHighlighted =
-				focusNode &&
-				(edge.source.id === focusNode || edge.target.id === focusNode);
-
+				focusNode && (edge.source.id === focusNode || edge.target.id === focusNode);
 			ctx.beginPath();
 			ctx.moveTo(sx, sy);
 			ctx.lineTo(tx, ty);
@@ -235,7 +227,6 @@
 
 		const isMobile = window.matchMedia('(hover: none)').matches;
 
-		// ── Nodes ──
 		for (const node of nodes) {
 			const nx = node.x ?? 0;
 			const ny = node.y ?? 0;
@@ -247,7 +238,6 @@
 				ctx.shadowColor = node.color;
 				ctx.shadowBlur = isFocused ? 18 : isHovered ? 14 : 5;
 			}
-
 			ctx.beginPath();
 			ctx.arc(nx, ny, r, 0, Math.PI * 2);
 			ctx.fillStyle = node.color;
@@ -257,7 +247,6 @@
 			ctx.shadowBlur = 0;
 		}
 
-		// ── Labels ──
 		ctx.textAlign = 'center';
 		for (const node of nodes) {
 			const nx = node.x ?? 0;
@@ -271,8 +260,7 @@
 				ctx.fillStyle = 'rgba(236, 236, 239, 0.95)';
 				ctx.fillText(node.label, nx, ny - r - 8);
 			} else {
-				const label =
-					node.label.length > 18 ? node.label.slice(0, 17) + '\u2026' : node.label;
+				const label = node.label.length > 18 ? node.label.slice(0, 17) + '\u2026' : node.label;
 				ctx.font = '10px Inter, sans-serif';
 				ctx.fillStyle = 'rgba(236, 236, 239, 0.45)';
 				ctx.fillText(label, nx, ny - r - 5);
@@ -292,16 +280,16 @@
 			const n = nodes[i];
 			const dx = (n.x ?? 0) - mx;
 			const dy = (n.y ?? 0) - my;
-			if (dx * dx + dy * dy < n.radius * n.radius * 1.5) {
-				return n;
-			}
+			if (dx * dx + dy * dy < n.radius * n.radius * 1.5) return n;
 		}
 		return null;
 	}
 
+	// ── Mouse events ──
 	function onMouseMove(e: MouseEvent) {
 		if (dragNode) {
 			didDrag = true;
+			userHasInteracted = true;
 			const rect = canvasEl!.getBoundingClientRect();
 			dragNode.fx = (e.clientX - rect.left - transform.x) / transform.k;
 			dragNode.fy = (e.clientY - rect.top - transform.y) / transform.k;
@@ -309,6 +297,7 @@
 			return;
 		}
 		if (isDragging) {
+			userHasInteracted = true;
 			transform.x += e.clientX - dragStart.x;
 			transform.y += e.clientY - dragStart.y;
 			dragStart.x = e.clientX;
@@ -316,7 +305,6 @@
 			render();
 			return;
 		}
-
 		const node = getNodeAt(e.clientX, e.clientY);
 		hoveredNode = node;
 		tooltipX = e.clientX;
@@ -355,7 +343,6 @@
 		if (didDrag) return;
 		const node = getNodeAt(e.clientX, e.clientY);
 		if (!node) return;
-
 		if (node.nodeType === 'user') goto(`/users/${node.id}`);
 		else if (node.nodeType === 'note') goto(`/notes/${node.id}`);
 		else if (node.nodeType === 'tag') goto(`/tags/${node.id.replace('tag:', '')}`);
@@ -365,11 +352,11 @@
 
 	function onWheel(e: WheelEvent) {
 		e.preventDefault();
+		userHasInteracted = true;
 		const factor = e.deltaY > 0 ? 0.9 : 1.1;
 		const rect = canvasEl!.getBoundingClientRect();
 		const mx = e.clientX - rect.left;
 		const my = e.clientY - rect.top;
-
 		transform.x = mx - (mx - transform.x) * factor;
 		transform.y = my - (my - transform.y) * factor;
 		transform.k *= factor;
@@ -380,12 +367,105 @@
 	function onMouseLeave() {
 		hoveredNode = null;
 		isDragging = false;
-		if (dragNode) {
-			dragNode.fx = null;
-			dragNode.fy = null;
-			dragNode = null;
-		}
+		if (dragNode) { dragNode.fx = null; dragNode.fy = null; dragNode = null; }
 		render();
+	}
+
+	// ── Touch events (mobile) ──
+	function getTouchPos(t: Touch) {
+		const rect = canvasEl!.getBoundingClientRect();
+		return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+	}
+
+	function onTouchStart(e: TouchEvent) {
+		if (!canvasEl) return;
+		didDrag = false;
+
+		if (e.touches.length === 1) {
+			const t = e.touches[0];
+			const node = getNodeAt(t.clientX, t.clientY);
+			if (node) {
+				dragNode = node;
+				dragNode.fx = node.x;
+				dragNode.fy = node.y;
+			} else {
+				isDragging = true;
+				dragStart.x = t.clientX;
+				dragStart.y = t.clientY;
+			}
+		} else if (e.touches.length === 2) {
+			// Pinch zoom setup
+			const p1 = getTouchPos(e.touches[0]);
+			const p2 = getTouchPos(e.touches[1]);
+			lastTouchDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+			lastTouchCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+			isDragging = false;
+			if (dragNode) { dragNode.fx = null; dragNode.fy = null; dragNode = null; }
+		}
+	}
+
+	function onTouchMove(e: TouchEvent) {
+		if (!canvasEl) return;
+		e.preventDefault();
+
+		if (e.touches.length === 1) {
+			const t = e.touches[0];
+			if (dragNode) {
+				didDrag = true;
+				userHasInteracted = true;
+				const rect = canvasEl.getBoundingClientRect();
+				dragNode.fx = (t.clientX - rect.left - transform.x) / transform.k;
+				dragNode.fy = (t.clientY - rect.top - transform.y) / transform.k;
+				simulation?.alpha(0.3).restart();
+			} else if (isDragging) {
+				userHasInteracted = true;
+				transform.x += t.clientX - dragStart.x;
+				transform.y += t.clientY - dragStart.y;
+				dragStart.x = t.clientX;
+				dragStart.y = t.clientY;
+				render();
+			}
+		} else if (e.touches.length === 2) {
+			// Pinch zoom
+			userHasInteracted = true;
+			const p1 = getTouchPos(e.touches[0]);
+			const p2 = getTouchPos(e.touches[1]);
+			const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+			const center = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+
+			if (lastTouchDist > 0) {
+				const factor = dist / lastTouchDist;
+				transform.x = center.x - (center.x - transform.x) * factor;
+				transform.y = center.y - (center.y - transform.y) * factor;
+				transform.k *= factor;
+				transform.k = Math.max(0.3, Math.min(3, transform.k));
+			}
+
+			// Pan with center movement
+			transform.x += center.x - lastTouchCenter.x;
+			transform.y += center.y - lastTouchCenter.y;
+
+			lastTouchDist = dist;
+			lastTouchCenter = center;
+			render();
+		}
+	}
+
+	function onTouchEnd(e: TouchEvent) {
+		if (e.touches.length === 0) {
+			if (dragNode && !didDrag) {
+				// Tap on node → navigate
+				if (dragNode.nodeType === 'user') goto(`/users/${dragNode.id}`);
+				else if (dragNode.nodeType === 'note') goto(`/notes/${dragNode.id}`);
+				else if (dragNode.nodeType === 'tag') goto(`/tags/${dragNode.id.replace('tag:', '')}`);
+				else if (dragNode.nodeType === 'external' && dragNode.meta?.url)
+					window.open(dragNode.meta.url as string, '_blank');
+			}
+			if (dragNode) { dragNode.fx = null; dragNode.fy = null; dragNode = null; }
+			isDragging = false;
+			simulation?.alpha(0.3).restart();
+		}
+		lastTouchDist = 0;
 	}
 
 	function measure() {
@@ -440,7 +520,7 @@
 					onclick={() => toggleFilter(type)}
 				>
 					<span class="filter-dot"></span>
-					{TYPE_LABELS[type]}
+					<span class="filter-label">{TYPE_LABELS[type]}</span>
 				</button>
 			{/each}
 		</div>
@@ -448,13 +528,16 @@
 
 	<canvas
 		bind:this={canvasEl}
-		style="width: 100%; height: {containerHeight || 600}px;"
+		style="width: 100%; height: {containerHeight || 600}px; touch-action: none;"
 		onmousemove={onMouseMove}
 		onmousedown={onMouseDown}
 		onmouseup={onMouseUp}
 		onclick={onClick}
 		onwheel={onWheel}
 		onmouseleave={onMouseLeave}
+		ontouchstart={onTouchStart}
+		ontouchmove={onTouchMove}
+		ontouchend={onTouchEnd}
 	></canvas>
 
 	{#if loading}
@@ -511,7 +594,7 @@
 		cursor: grab;
 	}
 
-	/* ── Back button (fullscreen) ── */
+	/* ── Back button ── */
 	.graph-back {
 		position: absolute;
 		top: 0.875rem;
@@ -584,13 +667,13 @@
 		background: var(--dot-color);
 		opacity: 0.3;
 		transition: opacity 0.15s;
+		flex-shrink: 0;
 	}
 
 	.filter-btn.active .filter-dot {
 		opacity: 1;
 	}
 
-	/* ── Overlay ── */
 	.graph-overlay {
 		position: absolute;
 		inset: 0;
@@ -625,35 +708,42 @@
 		to { opacity: 1; transform: translateY(0); }
 	}
 
-	.tooltip-title {
-		font-size: 12px;
-		font-weight: 600;
-		color: var(--color-accent);
-		margin-bottom: 3px;
-	}
+	.tooltip-title { font-size: 12px; font-weight: 600; color: var(--color-accent); margin-bottom: 3px; }
+	.tooltip-desc { font-size: 10px; color: var(--color-text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; line-height: 1.4; }
+	.tooltip-meta { font-size: 9px; color: var(--color-text-tertiary); display: flex; align-items: center; gap: 0.375rem; }
+	.tooltip-type { text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
 
-	.tooltip-desc {
-		font-size: 10px;
-		color: var(--color-text-secondary);
-		display: -webkit-box;
-		-webkit-line-clamp: 2;
-		-webkit-box-orient: vertical;
-		overflow: hidden;
-		margin-bottom: 4px;
-		line-height: 1.4;
-	}
+	/* ── Mobile ── */
+	@media (max-width: 640px) {
+		.graph-back {
+			width: 36px;
+			height: 36px;
+			top: 0.625rem;
+			left: 0.625rem;
+		}
 
-	.tooltip-meta {
-		font-size: 9px;
-		color: var(--color-text-tertiary);
-		display: flex;
-		align-items: center;
-		gap: 0.375rem;
-	}
+		.graph-toolbar {
+			top: 0.625rem;
+			right: 0.625rem;
+			padding: 0.2rem;
+			gap: 0.125rem;
+		}
 
-	.tooltip-type {
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
-		font-weight: 600;
+		.filter-btn {
+			padding: 0.25rem 0.375rem;
+		}
+
+		.filter-label {
+			display: none;
+		}
+
+		.filter-dot {
+			width: 10px;
+			height: 10px;
+		}
+
+		.graph-tooltip {
+			display: none;
+		}
 	}
 </style>
