@@ -133,9 +133,44 @@
 		restartSimulation();
 	}
 
+	let hasAutoFit = false;
+
+	function fitToView() {
+		if (nodes.length === 0) return;
+		const w = containerWidth || 800;
+		const h = containerHeight || 600;
+
+		let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+		for (const n of nodes) {
+			const r = n.radius;
+			if ((n.x ?? 0) - r < minX) minX = (n.x ?? 0) - r;
+			if ((n.y ?? 0) - r < minY) minY = (n.y ?? 0) - r;
+			if ((n.x ?? 0) + r > maxX) maxX = (n.x ?? 0) + r;
+			if ((n.y ?? 0) + r > maxY) maxY = (n.y ?? 0) + r;
+		}
+
+		const graphW = maxX - minX;
+		const graphH = maxY - minY;
+		if (graphW <= 0 || graphH <= 0) return;
+
+		const padding = 80;
+		const scale = Math.min(
+			(w - padding * 2) / graphW,
+			(h - padding * 2) / graphH,
+			3 // max zoom
+		);
+		const cx = (minX + maxX) / 2;
+		const cy = (minY + maxY) / 2;
+
+		transform.k = scale;
+		transform.x = w / 2 - cx * scale;
+		transform.y = h / 2 - cy * scale;
+	}
+
 	function startSimulation() {
 		const w = containerWidth || 800;
-		const h = containerHeight;
+		const h = containerHeight || 600;
+		hasAutoFit = false;
 
 		simulation = forceSimulation<VisNode>(nodes)
 			.force(
@@ -147,7 +182,14 @@
 			.force('charge', forceManyBody().strength(-200))
 			.force('center', forceCenter(w / 2, h / 2))
 			.force('collide', forceCollide<VisNode>().radius((d) => d.radius + 4))
-			.on('tick', render);
+			.on('tick', () => {
+				// Auto-fit once the simulation has mostly settled
+				if (!hasAutoFit && simulation && simulation.alpha() < 0.3) {
+					hasAutoFit = true;
+					fitToView();
+				}
+				render();
+			});
 	}
 
 	function restartSimulation() {
