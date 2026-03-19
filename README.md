@@ -1,188 +1,83 @@
-# Nagi Group
+# Nagiverse
 
 社区驱动的知识图谱。每个人维护自己的笔记，站点自动构建关系网络。
 
-**在线访问**：部署后可通过 Vercel 访问
+## 贡献内容
 
-## 快速开始：贡献内容
-
-### 1. Fork & Clone
+### 1. Fork → Clone → 创建你的目录
 
 ```bash
-git clone https://github.com/<your-fork>/nagi-group.git
-cd nagi-group
+git clone https://github.com/<your-fork>/nagiverse.git
+cd nagiverse
+mkdir -p content/users/<your-id>/notes
 ```
 
-### 2. 创建你的目录
+`<your-id>` 只能用小写字母、数字、连字符，例如 `zhangsan`。
 
-```
-content/users/<your-id>/
-├── profile.yaml        # 你的资料
-└── notes/              # 你的笔记
-    ├── my-first-note.md
-    └── another-note.md
-```
-
-`<your-id>` 是你的唯一标识，只能用小写字母、数字、连字符，例如 `zhangsan`、`cool-dev`。
-
-### 3. 填写 profile.yaml
+### 2. 写 profile.yaml
 
 ```yaml
-id: zhangsan               # 必须和目录名一致
-name: 张三                  # 显示名称
-bio: 全栈工程师，喜欢折腾    # 一句话介绍（可选）
-avatar: https://...         # 头像 URL（可选）
-links:                      # 你的链接（可选）
-  github: https://github.com/zhangsan
-  blog: https://zhangsan.dev
-tags:                       # 兴趣标签（可选）
+id: zhangsan          # 必填，和目录名一致
+name: 张三             # 必填
+bio: 全栈工程师        # 可选
+tags:                  # 可选
   - frontend
   - rust
-  - ai
 ```
 
-只有 `id` 和 `name` 是必填的，其他都可以不写。
+### 3. 写笔记
 
-### 4. 写笔记
-
-在 `notes/` 下创建 `.md` 文件：
+在 `notes/` 下创建 `.md` 文件，最简只需要 `id` 和 `title`：
 
 ```markdown
 ---
-id: my-note-id
-title: 我的笔记标题
+id: rust-async-notes
+title: Rust 异步编程笔记
+summary: tokio 运行时与 async/await 的核心概念    # 可选
+tags: [rust, async]                                # 可选
+created_at: "2025-12-01"                           # 可选
 ---
 
 正文从这里开始。
 ```
 
-**最简形式就是这样** —— 只需要 `id` 和 `title`。
+### 4. 双链语法
 
-想加更多信息？可以补充这些可选字段：
-
-```yaml
----
-id: rust-async-notes
-title: Rust 异步编程笔记
-summary: tokio 运行时与 async/await 的核心概念
-tags:
-  - rust
-  - async
-source_url: https://tokio.rs/tokio/tutorial
-created_at: "2025-12-01"
-updated_at: "2026-01-15"
-links:
-  - https://rust-lang.github.io/async-book/
-  - https://tokio.rs/
----
-```
-
-| 字段 | 必填 | 说明 |
-|------|------|------|
-| `id` | 是 | 笔记的唯一 ID，小写字母+数字+连字符 |
-| `title` | 是 | 标题 |
-| `summary` | 否 | 一句话摘要，会显示在卡片上 |
-| `tags` | 否 | 标签列表 |
-| `source_url` | 否 | 原文链接 |
-| `links` | 否 | 相关外部链接列表 |
-| `created_at` | 否 | 创建日期，格式 `"YYYY-MM-DD"` |
-| `updated_at` | 否 | 更新日期 |
-
-## 双链语法
-
-正文中用 `[[]]` 语法建立笔记和人之间的关联。这是构建知识图谱的核心。
-
-### 链接到笔记
+在正文中用 `[[]]` 建立关联，这是知识图谱的核心：
 
 ```markdown
-推荐阅读 [[rust-async-notes]]。
+推荐阅读 [[rust-async-notes]]。                   # 链接到笔记
+可以参考 [[rust-async-notes|这篇异步笔记]]。       # 自定义显示文本
+这个方案是 [[@zhangsan]] 提出的。                  # 提及用户
 ```
 
-渲染为链接，自动指向 `/notes/rust-async-notes`。
+所有 `[[]]` 引用会被 CI 校验，引用不存在的 ID 会报错。
 
-### 链接到笔记（自定义显示文本）
-
-```markdown
-可以参考 [[rust-async-notes|这篇异步笔记]]。
-```
-
-显示为「这篇异步笔记」，点击跳转到对应笔记。
-
-### 提及用户
-
-```markdown
-这个方案是 [[@zhangsan]] 提出的。
-```
-
-渲染为链接，指向 `/users/zhangsan`。
-
-### 组合使用
-
-```markdown
-[[@alice]] 写的 [[svelte-reactivity|Svelte 响应式笔记]] 很不错，
-配合 [[sigma-graph-intro]] 可以做交互式图谱。
-```
-
-**规则**：
-
-- `[[note-id]]` → 链接到笔记
-- `[[note-id|显示文本]]` → 链接到笔记，用自定义文本
-- `[[@user-id]]` → 提及用户
-- 所有 `[[]]` 引用会被 CI 校验，引用不存在的 ID 会报错
-- 这些关联会自动出现在知识图谱中
-
-## 提交 PR
+### 5. 本地检查 → 提交 PR
 
 ```bash
-# 确保本地校验通过
 bun install
-bun run validate
+bun run validate                    # 校验格式和引用
+bun run build:content && bun run dev  # 本地跑起来，检查页面渲染是否正常
+```
 
-# 提交
+确认无误后提交 PR：
+
+```bash
 git add content/users/<your-id>/
-git commit -m "add: <your-id> notes"
-git push origin main
+git commit -m "add: <your-id>"
+git push && gh pr create
 ```
 
-然后在 GitHub 上发起 Pull Request。CI 会自动检查：
+CI 通过 + 审核合并后自动部署。
 
-- profile.yaml 格式是否正确
-- 笔记 frontmatter 是否合法
-- ID 是否有重复
-- 所有 `[[]]` 引用是否指向真实存在的笔记或用户
+## 内容要求
 
-校验全部通过后等待审核合并。合并后站点自动重新部署。
+- **禁止 AI 生成内容。** 笔记必须是你自己写的，可以用 AI 辅助查资料，但最终内容必须经过你的理解和组织。
+- **确保内容正确。** 技术细节请自行核对，不要传播错误知识。如果不确定，标注出来。
+- **提交前本地预览。** 跑 `bun run dev` 看看你的笔记渲染是否正常、链接是否能跳转。
+- **注明来源。** 引用他人观点或资料请用 `source_url` 或在正文中标注出处。
 
-## 本地开发
+## 协议
 
-```bash
-bun install
-bun run build:content    # 构建图谱数据和搜索索引
-bun run dev              # 启动开发服务器
-```
-
-其他命令：
-
-```bash
-bun run validate         # 只跑校验
-bun run build            # 完整构建（校验 + 内容 + Vite）
-bun run preview          # 预览生产构建
-```
-
-## 目录结构
-
-```
-content/users/           # 所有用户内容
-  └── <user-id>/
-      ├── profile.yaml   # 用户资料
-      └── notes/         # 笔记目录
-          └── *.md       # Markdown 笔记
-schemas/                 # JSON Schema（校验规则）
-scripts/                 # 构建脚本
-src/                     # SvelteKit 站点
-static/generated/        # 构建产物（图谱 JSON）
-```
-
-## 技术栈
-
-SvelteKit + TypeScript + D3 Force + Canvas 2D + Bun + Vercel
+内容采用 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 协议。转载或引用请注明来源。
