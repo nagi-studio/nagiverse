@@ -382,15 +382,14 @@
 </script>
 
 <div class="graph-wrap" class:fullscreen bind:this={wrapperEl}>
-	{#if fullscreen}
-		<div class="graph-nav">
-			<a href="/" class="nav-back">nagi</a>
-			<a href="/" class="nav-back-link">Home</a>
-		</div>
-	{/if}
-
 	{#if !loading && !errorMsg}
 		<div class="graph-toolbar">
+			{#if fullscreen}
+				<a href="/" class="toolbar-back">
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+				</a>
+				<span class="toolbar-divider"></span>
+			{/if}
 			{#each (['user', 'note', 'tag', 'external'] as NodeType[]) as type}
 				<button
 					class="filter-btn"
@@ -470,38 +469,27 @@
 		cursor: grab;
 	}
 
-	/* ── Nav overlay (fullscreen) ── */
-	.graph-nav {
-		position: absolute;
-		top: 0.875rem;
-		left: 0.875rem;
-		z-index: 10;
+	/* ── Toolbar back button ── */
+	.toolbar-back {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
-		background: rgba(9, 9, 11, 0.7);
-		backdrop-filter: blur(8px);
-		padding: 0.375rem 0.875rem;
-		border-radius: 100px;
-		border: 1px solid var(--color-border);
-	}
-
-	.nav-back {
-		font-size: 0.8125rem;
-		font-weight: 700;
-		color: var(--color-text);
-		letter-spacing: -0.03em;
-	}
-
-	.nav-back-link {
-		font-size: 0.6875rem;
-		font-weight: 500;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		border-radius: 50%;
 		color: var(--color-text-tertiary);
-		transition: color 0.15s;
+		transition: all 0.15s ease;
 	}
 
-	.nav-back-link:hover {
+	.toolbar-back:hover {
 		color: var(--color-text);
+		background: rgba(255, 255, 255, 0.06);
+	}
+
+	.toolbar-divider {
+		width: 1px;
+		height: 16px;
+		background: var(--color-border);
 	}
 
 	/* ── Toolbar ── */
