@@ -1,0 +1,11 @@
+id: nagi-ovo
+name: Nagi
+bio: builder & learner
+avatar: https://api.dicebear.com/7.x/identicon/svg?seed=nagi
+links:
+  github: https://github.com/Nagi-ovo
+  blog: https://blog.nagi.fun
+tags:
+  - ai
+  - dev-tools
+  - productivity

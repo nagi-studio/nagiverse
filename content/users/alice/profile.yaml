@@ -4,8 +4,6 @@ bio: 前端工程师，关注 Web 性能与可视化
 avatar: https://api.dicebear.com/7.x/identicon/svg?seed=alice
 links:
   github: https://github.com/alice-example
-  blog: https://alice.example.com
 tags:
   - frontend
   - visualization
-  - svelte

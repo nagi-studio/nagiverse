@@ -1,9 +1,0 @@
-id: bob
-name: Bob Wang
-bio: 数据工程师，专注图数据和知识图谱
-links:
-  github: https://github.com/bob-example
-tags:
-  - graph
-  - data-engineering
-  - graphology
