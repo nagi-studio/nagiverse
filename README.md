@@ -20,10 +20,18 @@ mkdir -p content/users/<your-id>/notes
 id: zhangsan          # 必填，和目录名一致
 name: 张三             # 必填
 bio: 全栈工程师        # 可选
+links:                 # 必填，至少要有 github
+  github: https://github.com/zhangsan
+  bilibili: https://space.bilibili.com/123456  # 可选
+  x: https://twitter.com/zhangsan              # 可选
+  zhihu: https://www.zhihu.com/people/zhangsan # 可选
+  blog: https://zhangsan.dev                   # 可选
 tags:                  # 可选
   - frontend
   - rust
 ```
+
+> **注意：** `links.github` 是必填项，每位用户必须提供自己的 GitHub 主页链接。其他社交媒体（bilibili、x、zhihu、blog 等）为可选。
 
 ### 3. 写笔记
 

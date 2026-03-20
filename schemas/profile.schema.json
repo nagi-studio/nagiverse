@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "UserProfile",
   "type": "object",
-  "required": ["id", "name"],
+  "required": ["id", "name", "links"],
   "additionalProperties": false,
   "properties": {
     "id": {
@@ -25,11 +25,19 @@
     },
     "links": {
       "type": "object",
+      "required": ["github"],
+      "properties": {
+        "github": {
+          "type": "string",
+          "format": "uri",
+          "description": "GitHub profile URL (required)"
+        }
+      },
       "additionalProperties": {
         "type": "string",
         "format": "uri"
       },
-      "description": "Named links (e.g. github, twitter)"
+      "description": "Social links. github is required; optional: bilibili, x, zhihu, blog, etc."
     },
     "tags": {
       "type": "array",
