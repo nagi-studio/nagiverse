@@ -1,0 +1,47 @@
+name: Content PR Gate
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - edited
+      - ready_for_review
+    paths:
+      - 'content/**'
+
+concurrency:
+  group: content-pr-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review-and-automerge:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Review content policy
+        id: review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_WORKSPACE: ${{ github.workspace }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/review-content-pr.mjs
+
+      - name: Enable auto-merge
+        if: steps.review.outputs.enable_auto_merge == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh pr merge ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --auto --squash; then
+            echo "Failed to enable auto-merge. Check that repository setting 'Allow auto-merge' is enabled and squash merge is allowed."
+            exit 1
+          fi
