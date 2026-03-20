@@ -67,7 +67,7 @@
 	let allNodes: VisNode[] = [];
 	let allEdges: VisEdge[] = [];
 	let nodes: VisNode[] = [];
-	let edges: VisEdge[] = [];
+	let edges: VisEdge[] = $state([]);
 	let simulation: ReturnType<typeof forceSimulation<VisNode>> | null = null;
 	let containerWidth = $state(0);
 	let containerHeight = $state(0);
@@ -76,7 +76,7 @@
 	let transform = { x: 0, y: 0, k: 1 };
 	let isDragging = false;
 	let dragStart = { x: 0, y: 0 };
-	let dragNode: VisNode | null = null;
+	let dragNode: VisNode | null = $state(null);
 	let didDrag = false;
 	let userHasInteracted = false;
 
@@ -709,7 +709,7 @@
 	}
 
 	.tooltip-title { font-size: 12px; font-weight: 600; color: var(--color-accent); margin-bottom: 3px; }
-	.tooltip-desc { font-size: 10px; color: var(--color-text-secondary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; line-height: 1.4; }
+	.tooltip-desc { font-size: 10px; color: var(--color-text-secondary); display: -webkit-box; line-clamp: 2; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; line-height: 1.4; }
 	.tooltip-meta { font-size: 9px; color: var(--color-text-tertiary); display: flex; align-items: center; gap: 0.375rem; }
 	.tooltip-type { text-transform: uppercase; letter-spacing: 0.04em; font-weight: 600; }
 

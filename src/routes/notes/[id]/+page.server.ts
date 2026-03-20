@@ -12,6 +12,20 @@ interface NoteEntry {
 	wikiLinks: string[];
 }
 
+interface RelatedNote {
+	id: string;
+	title: string;
+}
+
+interface RelatedUser {
+	id: string;
+	name: string;
+}
+
+function isPresent<T>(value: T | null): value is T {
+	return value !== null;
+}
+
 export function load({ params }) {
 	const users = usersJson as UserProfile[];
 	const allNotes = notesJson as NoteEntry[];
@@ -27,7 +41,7 @@ export function load({ params }) {
 			const r = allNotes.find((n) => n.frontmatter.id === rid);
 			return r ? { id: r.frontmatter.id, title: r.frontmatter.title } : null;
 		})
-		.filter(Boolean);
+		.filter(isPresent<RelatedNote>);
 
 	// Resolve related users
 	const relatedUsers = (note.frontmatter.related_users ?? [])
@@ -35,7 +49,7 @@ export function load({ params }) {
 			const u = users.find((us) => us.id === uid);
 			return u ? { id: u.id, name: u.name } : null;
 		})
-		.filter(Boolean);
+		.filter(isPresent<RelatedUser>);
 
 	return {
 		note: {

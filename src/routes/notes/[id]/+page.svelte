@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	let { data } = $props();
+	import type { PageData } from './$types';
+
+	let { data }: { data: PageData } = $props();
 	let proseEl: HTMLDivElement;
 
 	onMount(() => {
