@@ -46,8 +46,8 @@
 		tag: 'Tag',
 		external: 'External'
 	};
-	const EDGE_COLOR = 'rgba(167, 139, 250, 0.10)';
-	const EDGE_HIGHLIGHT = 'rgba(167, 139, 250, 0.30)';
+	const EDGE_COLOR = 'rgba(167, 139, 250, 0.35)';
+	const EDGE_HIGHLIGHT = 'rgba(167, 139, 250, 0.65)';
 
 	interface VisNode extends SimulationNodeDatum {
 		id: string;
@@ -67,7 +67,9 @@
 	let allNodes: VisNode[] = [];
 	let allEdges: VisEdge[] = [];
 	let nodes: VisNode[] = [];
-	let edges: VisEdge[] = $state([]);
+	let renderEdges: VisEdge[] = [];
+	let edgeCount = $state(0);
+	let nodeById = new Map<string, VisNode>();
 	let simulation: ReturnType<typeof forceSimulation<VisNode>> | null = null;
 	let containerWidth = $state(0);
 	let containerHeight = $state(0);
@@ -121,9 +123,11 @@
 			if (visible) visibleIds.add(n.id);
 			return visible;
 		});
-		edges = allEdges.filter(
+		renderEdges = allEdges.filter(
 			(e) => visibleIds.has(e.source.id) && visibleIds.has(e.target.id)
 		);
+		edgeCount = renderEdges.length;
+		nodeById = new Map(nodes.map((n) => [n.id, n]));
 	}
 
 	function toggleFilter(type: NodeType) {
@@ -174,7 +178,7 @@
 		simulation = forceSimulation<VisNode>(nodes)
 			.force(
 				'link',
-				forceLink<VisNode, VisEdge>(edges)
+				forceLink<VisNode, VisEdge>(renderEdges)
 					.id((d) => d.id)
 					.distance(80)
 			)
@@ -210,18 +214,21 @@
 		ctx.translate(transform.x, transform.y);
 		ctx.scale(transform.k, transform.k);
 
-		for (const edge of edges) {
-			const sx = edge.source.x ?? 0;
-			const sy = edge.source.y ?? 0;
-			const tx = edge.target.x ?? 0;
-			const ty = edge.target.y ?? 0;
+		for (const edge of renderEdges) {
+			const sNode = nodeById.get(edge.source.id);
+			const tNode = nodeById.get(edge.target.id);
+			if (!sNode || !tNode) continue;
+			const sx = sNode.x ?? 0;
+			const sy = sNode.y ?? 0;
+			const tx = tNode.x ?? 0;
+			const ty = tNode.y ?? 0;
 			const isHighlighted =
-				focusNode && (edge.source.id === focusNode || edge.target.id === focusNode);
+				focusNode && (sNode.id === focusNode || tNode.id === focusNode);
 			ctx.beginPath();
 			ctx.moveTo(sx, sy);
 			ctx.lineTo(tx, ty);
 			ctx.strokeStyle = isHighlighted ? EDGE_HIGHLIGHT : EDGE_COLOR;
-			ctx.lineWidth = isHighlighted ? 1.5 : 0.8;
+			ctx.lineWidth = isHighlighted ? 2 : 1.2;
 			ctx.stroke();
 		}
 
@@ -563,7 +570,7 @@
 			{/if}
 			<div class="tooltip-meta">
 				<span class="tooltip-type">{hoveredNode.nodeType}</span>
-				{edges.filter((e) => e.source.id === hoveredNode?.id || e.target.id === hoveredNode?.id).length} connections
+				{renderEdges.filter((e) => e.source.id === hoveredNode?.id || e.target.id === hoveredNode?.id).length} connections
 			</div>
 		</div>
 	{/if}
