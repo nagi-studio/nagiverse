@@ -1,5 +1,112 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	let { data } = $props();
+	let proseEl: HTMLDivElement;
+
+	onMount(() => {
+		if (!proseEl) return;
+		// Find the "Arena" h2
+		const h2s = proseEl.querySelectorAll('h2');
+		let arenaH2: HTMLElement | null = null;
+		for (const h2 of h2s) {
+			if (h2.textContent?.includes('Arena')) {
+				arenaH2 = h2;
+				break;
+			}
+		}
+		if (!arenaH2) return;
+
+		// Collect h3+table groups after the Arena h2
+		type TabGroup = { heading: HTMLElement; table: HTMLElement; label: string };
+		const months: TabGroup[] = [];
+		let prediction: TabGroup | null = null;
+		let el = arenaH2.nextElementSibling;
+		// Skip the blockquote description
+		while (el && el.tagName === 'BLOCKQUOTE') el = el.nextElementSibling;
+
+		while (el && el.tagName !== 'H2' && el.tagName !== 'HR') {
+			if (el.tagName === 'H3') {
+				const heading = el as HTMLElement;
+				const table = heading.nextElementSibling;
+				if (table && table.tagName === 'TABLE') {
+					const label = heading.textContent?.trim() ?? '';
+					const group = { heading, table: table as HTMLElement, label };
+					if (label.includes('预言')) {
+						prediction = group;
+					} else {
+						months.push(group);
+					}
+					el = table.nextElementSibling;
+					continue;
+				}
+			}
+			el = el.nextElementSibling;
+		}
+
+		if (months.length < 2) return;
+
+		// Build tab container
+		const container = document.createElement('div');
+		container.className = 'arena-tabs';
+
+		// Tab bar
+		const tabBar = document.createElement('div');
+		tabBar.className = 'arena-tab-bar';
+
+		// Tab panels
+		const panels = document.createElement('div');
+		panels.className = 'arena-panels';
+
+		months.forEach((group, i) => {
+			// Create tab button
+			const btn = document.createElement('button');
+			btn.className = 'arena-tab-btn' + (i === 0 ? ' active' : '');
+			btn.textContent = group.label;
+			btn.addEventListener('click', () => {
+				tabBar.querySelectorAll('.arena-tab-btn').forEach(b => b.classList.remove('active'));
+				btn.classList.add('active');
+				panels.querySelectorAll('.arena-panel').forEach(p => (p as HTMLElement).classList.remove('active'));
+				panels.children[i]?.classList.add('active');
+			});
+			tabBar.appendChild(btn);
+
+			// Create panel
+			const panel = document.createElement('div');
+			panel.className = 'arena-panel' + (i === 0 ? ' active' : '');
+			panel.appendChild(group.table);
+			panels.appendChild(panel);
+		});
+
+		container.appendChild(tabBar);
+		container.appendChild(panels);
+
+		// Prediction section (separate)
+		let predictionSection: HTMLElement | null = null;
+		if (prediction) {
+			predictionSection = document.createElement('div');
+			predictionSection.className = 'arena-prediction';
+			const predTitle = document.createElement('h3');
+			predTitle.textContent = '🔮 ' + prediction.label;
+			predictionSection.appendChild(predTitle);
+			predictionSection.appendChild(prediction.table);
+		}
+
+		// Remove original h3 headings (tables already moved to panels)
+		for (const g of months) g.heading.remove();
+		if (prediction) prediction.heading.remove();
+
+		// Insert tab container after the blockquote
+		let insertPoint = arenaH2.nextElementSibling;
+		while (insertPoint && insertPoint.tagName === 'BLOCKQUOTE') {
+			insertPoint = insertPoint.nextElementSibling;
+		}
+		if (insertPoint) {
+			insertPoint.parentNode?.insertBefore(container, insertPoint);
+			if (predictionSection) {
+				container.parentNode?.insertBefore(predictionSection, container.nextSibling);
+			}
+		}
+	});
 </script>
 
 <svelte:head>
@@ -30,7 +137,7 @@
 		<div class="note-summary">{data.note.summary}</div>
 	{/if}
 
-	<div class="prose">
+	<div class="prose" bind:this={proseEl}>
 		{@html data.note.html}
 	</div>
 
@@ -150,5 +257,71 @@
 	.related-item:hover {
 		background: var(--color-bg-hover);
 		color: var(--color-text);
+	}
+
+	/* ── Arena Tabs ── */
+	:global(.arena-tabs) {
+		margin-bottom: 1.5rem;
+	}
+	:global(.arena-tab-bar) {
+		display: flex;
+		gap: 0.375rem;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		padding-bottom: 0.5rem;
+		margin-bottom: 1rem;
+		border-bottom: 1px solid var(--color-border);
+		scrollbar-width: none;
+	}
+	:global(.arena-tab-bar::-webkit-scrollbar) {
+		display: none;
+	}
+	:global(.arena-tab-btn) {
+		flex-shrink: 0;
+		padding: 0.5rem 1rem;
+		border: 1px solid var(--color-border);
+		border-bottom: none;
+		border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+		background: transparent;
+		color: var(--color-text-tertiary);
+		font-family: var(--font-sans);
+		font-size: 0.8125rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s var(--ease-out);
+		white-space: nowrap;
+	}
+	:global(.arena-tab-btn:hover) {
+		color: var(--color-text-secondary);
+		background: var(--color-bg-hover);
+	}
+	:global(.arena-tab-btn.active) {
+		color: var(--color-accent);
+		background: var(--color-bg-card);
+		border-color: var(--color-accent);
+		border-bottom: 2px solid var(--color-bg);
+		margin-bottom: -1px;
+	}
+	:global(.arena-panel) {
+		display: none;
+	}
+	:global(.arena-panel.active) {
+		display: block;
+		animation: arena-fade 0.25s var(--ease-out);
+	}
+	@keyframes arena-fade {
+		from { opacity: 0; transform: translateY(4px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+	:global(.arena-prediction) {
+		margin-top: 1.5rem;
+		padding-top: 1.5rem;
+		border-top: 1px dashed var(--color-border);
+	}
+	:global(.arena-prediction h3) {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--color-amber);
+		margin-bottom: 0.75rem;
 	}
 </style>

@@ -13,6 +13,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
 import remarkRehype from 'remark-rehype';
 import rehypeStringify from 'rehype-stringify';
 import {
@@ -25,7 +26,7 @@ import {
 import type { GraphData, GraphNode, GraphEdge, NoteDocument } from '../src/lib/types/index.js';
 
 // ── Markdown renderer ──
-const md = unified().use(remarkParse).use(remarkRehype).use(rehypeStringify);
+const md = unified().use(remarkParse).use(remarkGfm).use(remarkRehype).use(rehypeStringify);
 
 function renderMarkdown(body: string): string {
 	// Resolve [[wiki links]] to standard markdown links before remark processing
