@@ -9,7 +9,7 @@
  *
  * No longer depends on graphology — layout is done client-side by d3-force.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
@@ -155,8 +155,9 @@ function subgraph(seedIds: Set<string>): GraphData {
 	};
 }
 
-// ── Write outputs ──
-mkdirSync(STATIC_DIR, { recursive: true });
+// ── Write outputs (clean stale files first) ──
+rmSync(STATIC_DIR, { recursive: true, force: true });
+rmSync(LIB_GENERATED_DIR, { recursive: true, force: true });
 mkdirSync(join(STATIC_DIR, 'users'), { recursive: true });
 mkdirSync(join(STATIC_DIR, 'tags'), { recursive: true });
 mkdirSync(LIB_GENERATED_DIR, { recursive: true });
