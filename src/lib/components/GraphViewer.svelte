@@ -78,7 +78,8 @@
 	let transform = { x: 0, y: 0, k: 1 };
 	let isDragging = false;
 	let dragStart = { x: 0, y: 0 };
-	let dragNode: VisNode | null = $state(null);
+	let dragNode: VisNode | null = null;
+	let isDraggingNode = $state(false);
 	let didDrag = false;
 	let userHasInteracted = false;
 
@@ -325,6 +326,7 @@
 		const node = getNodeAt(e.clientX, e.clientY);
 		if (node) {
 			dragNode = node;
+			isDraggingNode = true;
 			dragNode.fx = node.x;
 			dragNode.fy = node.y;
 		} else {
@@ -340,6 +342,7 @@
 			dragNode.fx = null;
 			dragNode.fy = null;
 			dragNode = null;
+			isDraggingNode = false;
 			simulation?.alpha(0.3).restart();
 		}
 		isDragging = false;
@@ -374,7 +377,7 @@
 	function onMouseLeave() {
 		hoveredNode = null;
 		isDragging = false;
-		if (dragNode) { dragNode.fx = null; dragNode.fy = null; dragNode = null; }
+		if (dragNode) { dragNode.fx = null; dragNode.fy = null; dragNode = null; isDraggingNode = false; }
 		render();
 	}
 
@@ -393,6 +396,7 @@
 			const node = getNodeAt(t.clientX, t.clientY);
 			if (node) {
 				dragNode = node;
+				isDraggingNode = true;
 				dragNode.fx = node.x;
 				dragNode.fy = node.y;
 			} else {
@@ -407,7 +411,7 @@
 			lastTouchDist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
 			lastTouchCenter = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
 			isDragging = false;
-			if (dragNode) { dragNode.fx = null; dragNode.fy = null; dragNode = null; }
+			if (dragNode) { dragNode.fx = null; dragNode.fy = null; dragNode = null; isDraggingNode = false; }
 		}
 	}
 
@@ -468,7 +472,7 @@
 				else if (dragNode.nodeType === 'external' && dragNode.meta?.url)
 					window.open(dragNode.meta.url as string, '_blank');
 			}
-			if (dragNode) { dragNode.fx = null; dragNode.fy = null; dragNode = null; }
+			if (dragNode) { dragNode.fx = null; dragNode.fy = null; dragNode = null; isDraggingNode = false; }
 			isDragging = false;
 			simulation?.alpha(0.3).restart();
 		}
@@ -557,7 +561,7 @@
 		</div>
 	{/if}
 
-	{#if hoveredNode && !dragNode}
+	{#if hoveredNode && !isDraggingNode}
 		<div
 			class="graph-tooltip"
 			style="left: {tooltipX + 12}px; top: {tooltipY - 8}px;"
