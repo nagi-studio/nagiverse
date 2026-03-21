@@ -65,7 +65,7 @@ for (const { profile } of users) {
 		type: 'user',
 		label: profile.name,
 		x: 0, y: 0, size: 12,
-		color: '#a78bfa',
+		color: '#c4714a',
 		meta: { bio: profile.bio }
 	});
 }
@@ -83,7 +83,7 @@ for (const { doc } of notes) {
 		type: 'note',
 		label: fm.title,
 		x: 0, y: 0, size: 6,
-		color: '#34d399',
+		color: '#8b7bd4',
 		meta: { summary: fm.summary, owner: doc.owner }
 	});
 }
@@ -99,7 +99,7 @@ for (const tag of allTags) {
 		type: 'tag',
 		label: `#${tag}`,
 		x: 0, y: 0, size: 8,
-		color: '#fbbf24'
+		color: '#9a6030'
 	});
 }
 
@@ -126,7 +126,7 @@ for (const doc of renderedNotes) {
 			type: 'external',
 			label: new URL(url).hostname,
 			x: 0, y: 0, size: 4,
-			color: '#63636e',
+			color: '#979590',
 			meta: { url }
 		});
 		addEdge(fm.id, extId, 'references');

@@ -35,10 +35,10 @@
 	});
 
 	const TYPE_COLORS: Record<string, string> = {
-		user: '#a78bfa',
-		note: '#34d399',
-		tag: '#fbbf24',
-		external: '#63636e'
+		user: '#c4714a',
+		note: '#8b7bd4',
+		tag: '#9a6030',
+		external: '#979590'
 	};
 	const TYPE_LABELS: Record<NodeType, string> = {
 		user: 'User',
@@ -46,8 +46,8 @@
 		tag: 'Tag',
 		external: 'External'
 	};
-	const EDGE_COLOR = 'rgba(167, 139, 250, 0.35)';
-	const EDGE_HIGHLIGHT = 'rgba(167, 139, 250, 0.65)';
+	const EDGE_COLOR = 'rgba(196, 113, 74, 0.30)';
+	const EDGE_HIGHLIGHT = 'rgba(196, 113, 74, 0.60)';
 
 	interface VisNode extends SimulationNodeDatum {
 		id: string;
@@ -618,7 +618,7 @@
 		height: 40px;
 		border-radius: 50%;
 		color: var(--color-text-secondary);
-		background: rgba(9, 9, 11, 0.7);
+		background: rgba(42, 40, 36, 0.8);
 		backdrop-filter: blur(8px);
 		border: 1px solid var(--color-border);
 		transition: all 0.2s var(--ease-out);
@@ -626,7 +626,7 @@
 
 	.graph-back:hover {
 		color: var(--color-text);
-		background: rgba(9, 9, 11, 0.85);
+		background: rgba(42, 40, 36, 0.9);
 		border-color: var(--color-border-hover);
 	}
 
@@ -638,7 +638,7 @@
 		z-index: 10;
 		display: flex;
 		gap: 0.25rem;
-		background: rgba(9, 9, 11, 0.7);
+		background: rgba(42, 40, 36, 0.8);
 		backdrop-filter: blur(8px);
 		padding: 0.25rem;
 		border-radius: 100px;
@@ -705,7 +705,7 @@
 		z-index: 700;
 		max-width: 240px;
 		padding: 8px 10px;
-		background: rgba(9, 9, 11, 0.92);
+		background: rgba(42, 40, 36, 0.92);
 		border: 1px solid var(--color-border);
 		border-left: 2px solid var(--color-accent);
 		border-radius: 6px;
